@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f5f7;
+            color: #333;
+        }
+        h1 {
+            color: #003366;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        .delete-all-icon {
+            position: absolute;
+            top: 0;
+            right: 0;
+            cursor: pointer;
+            color: #005bac;
+            font-size: 24px;
+        }
+        .delete-all-icon:hover {
+            color: #003366;
+        }
+        .input-group, #flashcards, .study-mode, .import-export-mode {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #005bac;
+        }
+        input[type="text"], input[type="file"], textarea {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 10px 0;
+            background-color: #005bac;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            max-width: 200px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        button:hover {
+            background-color: #003366;
+        }
+        .flashcard-group {
+            margin-top: 20px;
+        }
+        .category-header {
+            background-color: #005bac;
+            color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .card {
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #fff;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        .answer {
+            display: none;
+            margin-top: 5px;
+            color: #333;
+        }
+        .trash-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #005bac;
+        }
+        .trash-icon:hover {
+            color: #003366;
+        }
+        .study-mode, .import-export-mode {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .study-card, .import-export-card {
+            border: 1px solid #ccc;
+            padding: 20px;
+            border-radius: 4px;
+            background-color: #fff;
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .study-card .button-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .study-card button {
+            width: 100%;
+            max-width: none;
+        }
+        .study-card .end-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+            color: #005bac;
+        }
+        .study-card .end-icon:hover {
+            color: #003366;
+        }
+        @media (min-width: 768px) {
+            button {
+                width: auto;
+                display: inline-block;
+                margin: 0;
+            }
+            .study-card button {
+                max-width: 200px;
+            }
+            .import-export-card {
+                margin-top: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Flashcard Study App
+        <i class="bi bi-trash delete-all-icon" onclick="confirmDeleteAll()"></i>
+    </h1>
+    <div class="input-group">
+        <label for="category">Category:</label>
+        <input type="text" id="category" placeholder="Enter category">
+    </div>
+    <div class="input-group">
+        <label for="question">Question:</label>
+        <input type="text" id="question" placeholder="Enter question">
+    </div>
+    <div class="input-group">
+        <label for="answer">Answer:</label>
+        <input type="text" id="answer" placeholder="Enter answer">
+    </div>
+    <button onclick="addFlashcard()">Add Flashcard</button>
+    <button onclick="toggleImportExportMode()">Import/Export Mode</button>
+    <button onclick="startStudyMode()">Start Study Mode</button>
+
+    <div id="flashcards"></div>
+
+    <div class="import-export-mode" id="importExportMode">
+        <div class="import-export-card">
+            <h2>Import Flashcards</h2>
+            <input type="file" id="yamlFileInput" accept=".yaml">
+            <button onclick="importFlashcardsFromFile()">Import from File</button>
+            <h2>Export Flashcards</h2>
+            <button onclick="exportFlashcards()">Export Flashcards</button>
+            <button onclick="toggleImportExportMode()">Close</button>
+        </div>
+    </div>
+
+    <div class="study-mode" id="studyMode">
+        <div class="study-card" id="studyCard">
+            <div id="studyQuestion"></div>
+            <div id="studyAnswer" style="display: none;"></div>
+            <div class="button-group">
+                <button class="show-hide-btn" onclick="toggleStudyAnswer()">Show/Hide Answer</button>
+                <button class="next-btn" onclick="nextStudyCard()">Next Card</button>
+            </div>
+            <i class="bi bi-x-lg end-icon" onclick="endStudyMode()"></i>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+    <script>
+        const flashcards = JSON.parse(localStorage.getItem('flashcards') || '[]');
+        const lastExportInfo = JSON.parse(localStorage.getItem('lastExportInfo') || '{}');
+        let shuffledCards = [];
+        let currentCardIndex = 0;
+
+        function addFlashcard() {
+            const category = document.getElementById('category').value;
+            const question = document.getElementById('question').value;
+            const answer = document.getElementById('answer').value;
+
+            if (!category || !question || !answer) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const flashcard = { category, question, answer };
+            flashcards.push(flashcard);
+            saveToLocalStorage();
+            displayFlashcards();
+            clearInputs();
+            checkExportAlert();
+        }
+
+        function displayFlashcards() {
+            const container = document.getElementById('flashcards');
+            container.innerHTML = '';
+
+            const groupedFlashcards = flashcards.reduce((groups, card) => {
+                if (!groups[card.category]) {
+                    groups[card.category] = [];
+                }
+                groups[card.category].push(card);
+                return groups;
+            }, {});
+
+            for (const category in groupedFlashcards) {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'flashcard-group';
+                categoryDiv.innerHTML = `<div class="category-header">${category}</div>`;
+
+                groupedFlashcards[category].forEach((card, index) => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = 'card';
+                    cardDiv.innerHTML = `
+                        <div>Q: ${card.question}</div>
+                        <div class="answer" id="answer-${category}-${index}">A: ${card.answer}</div>
+                        <button onclick="toggleAnswer('${category}', ${index})">Show/Hide Answer</button>
+                        <i class="bi bi-trash trash-icon" onclick="deleteFlashcard('${category}', ${index})"></i>
+                    `;
+                    categoryDiv.appendChild(cardDiv);
+                });
+
+                container.appendChild(categoryDiv);
+            }
+        }
+
+        function clearInputs() {
+            document.getElementById('category').value = '';
+            document.getElementById('question').value = '';
+            document.getElementById('answer').value = '';
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem('flashcards', JSON.stringify(flashcards));
+        }
+
+        function importFlashcardsFromFile() {
+            const fileInput = document.getElementById('yamlFileInput');
+            const file = fileInput.files[0];
+            if (!file) {
+                alert('Please select a YAML file to import.');
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    const parsedFlashcards = jsyaml.load(event.target.result);
+                    if (Array.isArray(parsedFlashcards)) {
+                        parsedFlashcards.forEach(card => {
+                            if (card.category && card.question && card.answer) {
+                                const isDuplicate = flashcards.some(existingCard =>
+                                    existingCard.category === card.category &&
+                                    existingCard.question === card.question &&
+                                    existingCard.answer === card.answer
+                                );
+                                if (!isDuplicate) {
+                                    flashcards.push(card);
+                                }
+                            }
+                        });
+                        saveToLocalStorage();
+                        alert('Flashcards imported successfully.');
+                        location.reload(); // Refresh the page
+                    } else {
+                        alert('Invalid YAML format');
+                    }
+                } catch (e) {
+                    alert('Error parsing YAML: ' + e.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function exportFlashcards() {
+            let yamlString = jsyaml.dump(flashcards);
+            const blob = new Blob([yamlString], { type: 'text/yaml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'flashcards_db.yaml';
+            a.click();
+            URL.revokeObjectURL(url);
+            lastExportInfo.timestamp = new Date().getTime();
+            lastExportInfo.count = flashcards.length;
+            localStorage.setItem('lastExportInfo', JSON.stringify(lastExportInfo));
+        }
+
+        function toggleAnswer(category, index) {
+            const answerDiv = document.getElementById(`answer-${category}-${index}`);
+            answerDiv.style.display = answerDiv.style.display === 'none' || !answerDiv.style.display ? 'block' : 'none';
+        }
+
+        function deleteFlashcard(category, index) {
+            const categoryCards = flashcards.filter(card => card.category === category);
+            const cardIndex = flashcards.indexOf(categoryCards[index]);
+            if (cardIndex > -1) {
+                flashcards.splice(cardIndex, 1);
+                saveToLocalStorage();
+                displayFlashcards();
+                checkExportAlert();
+            }
+        }
+
+        function startStudyMode() {
+            shuffledCards = [...flashcards].sort(() => Math.random() - 0.5);
+            currentCardIndex = 0;
+            document.getElementById('studyMode').style.display = 'block';
+            document.querySelector('h1').style.display = 'none';
+            document.getElementById('flashcards').style.display = 'none';
+            document.querySelectorAll('.input-group, button:not(.study-mode button)').forEach(el => el.style.display = 'none');
+            showStudyCard();
+        }
+
+        function showStudyCard() {
+            if (shuffledCards.length > 0) {
+                const card = shuffledCards[currentCardIndex];
+                document.getElementById('studyQuestion').innerText = `Q: ${card.question}`;
+                document.getElementById('studyAnswer').innerText = `A: ${card.answer}`;
+                document.getElementById('studyAnswer').style.display = 'none';
+            }
+        }
+
+        function toggleStudyAnswer() {
+            const answerDiv = document.getElementById('studyAnswer');
+            answerDiv.style.display = answerDiv.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function nextStudyCard() {
+            currentCardIndex = (currentCardIndex + 1) % shuffledCards.length;
+            showStudyCard();
+        }
+
+        function endStudyMode() {
+            document.getElementById('studyMode').style.display = 'none';
+            document.querySelector('h1').style.display = 'block';
+            document.getElementById('flashcards').style.display = '';
+            document.querySelectorAll('.input-group, button:not(.study-mode button)').forEach(el => el.style.display = '');
+        }
+
+        function toggleImportExportMode() {
+            const modeDiv = document.getElementById('importExportMode');
+            modeDiv.style.display = modeDiv.style.display === 'none' || !modeDiv.style.display ? 'block' : 'none';
+            document.getElementById('flashcards').style.display = modeDiv.style.display === 'block' ? 'none' : '';
+        }
+
+        function confirmDeleteAll() {
+            if (confirm("Are you sure you want to delete all flashcards?")) {
+                localStorage.clear();
+                flashcards.length = 0;
+                displayFlashcards();
+                alert("All flashcards have been deleted.");
+            }
+        }
+
+        function checkExportAlert() {
+            const now = new Date().getTime();
+            const daysSinceExport = (now - (lastExportInfo.timestamp || 0)) / (1000 * 60 * 60 * 24);
+            const addedFlashcards = flashcards.length - (lastExportInfo.count || 0);
+            const lastAlert = localStorage.getItem('lastAlert') || 0;
+            const daysSinceAlert = (now - lastAlert) / (1000 * 60 * 60 * 24);
+
+            if ((daysSinceExport >= 2 || addedFlashcards > 2) && addedFlashcards !== 0) {
+                if (daysSinceAlert >= 1) {
+                    alert("You haven't exported your flashcards in the last 2 days or more than two new flashcards have been added.");
+                    localStorage.setItem('lastAlert', now);
+                }
+            }
+        }
+
+        // Initialize display on page load
+        displayFlashcards();
+        checkExportAlert();
+    </script>
+</body>
+</html>
